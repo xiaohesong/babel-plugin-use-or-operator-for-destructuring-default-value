@@ -1,0 +1,18 @@
+# npm
+/node_modules
+
+# build
+/lib
+
+# log
+*.log
+
+# OS files
+.DS_STORE
+
+# No npm lockfiles
+npm-shrinkwrap.json
+package-lock.json
+
+# JetBrains IDE
+.idea

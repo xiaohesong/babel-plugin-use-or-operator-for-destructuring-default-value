@@ -1,0 +1,32 @@
+{
+  "name": "babel-plugin-use-or-operator-for-destructuring-default-value",
+  "version": "1.0.2",
+  "description": "destructuring default value use `||`, without undefined only ",
+  "main": "lib/index.js",
+  "author": "xiaohesong",
+  "license": "MIT",
+  "scripts": {
+    "test:unit": "mocha --require @babel/register",
+    "test:watch": "mocha -w",
+    "prebuild": "rm -rf lib/",
+    "build": "babel src --out-dir lib"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.10.1",
+    "@babel/core": "^7.10.2",
+    "@babel/preset-env": "^7.10.2",
+    "@babel/register": "^7.10.1",
+    "babel-eslint": "^10.1.0",
+    "chai": "^4.2.0",
+    "eslint-config-airbnb": "^18.2.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "mocha": "^8.0.1"
+  },
+  "dependencies": {
+    "eslint": "^7.2.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "generate": "^0.14.0",
+    "prettier": "^2.0.5"
+  }
+}
