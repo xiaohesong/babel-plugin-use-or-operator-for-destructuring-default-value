@@ -3,6 +3,13 @@
   "version": "1.0.2",
   "description": "destructuring default value use `||`, without undefined only ",
   "main": "lib/index.js",
+  "files": [
+    "lib"
+  ],
+  "keywords": [
+    "babel-plugin",
+    "destructuring"
+  ],
   "author": "xiaohesong",
   "license": "MIT",
   "scripts": {
