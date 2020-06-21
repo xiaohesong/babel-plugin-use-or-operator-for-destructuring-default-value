@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-use-or-operator-for-destructuring-default-value",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "destructuring default value use `||`, without undefined only ",
   "main": "lib/index.js",
   "files": [
