@@ -1,5 +1,6 @@
 
 export default function (babel, options) {
+  const { loose = false, useBuiltIns = false } = options;
   const STOP_TRAVERSAL = {};
   const { types: t } = babel
   const arrays = {}
@@ -23,6 +24,12 @@ export default function (babel, options) {
     return false;
   }
 
+  function getExtendsHelper(addHelper) {
+    return useBuiltIns
+      ? t.memberExpression(t.identifier("Object"), t.identifier("assign"))
+      : addHelper("extends");
+  }
+
   const arrayUnpackVisitor = (node, ancestors, state) => {
     if (!ancestors.length) {
       return;
@@ -38,7 +45,7 @@ export default function (babel, options) {
     }
   };
 
-  function resolve({ scope, blockHoist, kind }, nodes) {
+  function resolve({ scope, blockHoist, kind, addHelper }, nodes) {
 
     function buildVariableDeclaration(id, init) {
       const declar = t.variableDeclaration("var", [
@@ -91,7 +98,7 @@ export default function (babel, options) {
             t.memberExpression(elemRef, t.identifier("slice")),
             [t.numericLiteral(e)],
           );
-          element = elem.argument;
+          element = element.argument;
         } else {
           elemRef = t.memberExpression(arrayRef, t.numericLiteral(e), true);
         }
@@ -152,7 +159,7 @@ export default function (babel, options) {
         } else {
           push(elem, arr.elements[i]);
         }
-        
+
       }
     }
 
@@ -172,8 +179,67 @@ export default function (babel, options) {
     function objectPattern(pattern, objRef) {
       for (let i = 0; i < pattern.properties.length; i++) {
         const prop = pattern.properties[i];
-        objectProperty(prop, objRef);
+        if (t.isRestElement(prop)) {
+          pushObjectRest(pattern, objRef, prop, i);
+        } else {
+          objectProperty(prop, objRef);
+        }
+        // objectProperty(prop, objRef);
       }
+    }
+
+    function pushObjectRest(pattern, objRef, spreadProp, spreadPropIndex) {
+      // get all the keys that appear in this object before the current spread
+
+      const keys = [];
+      let allLiteral = true;
+
+      for (let i = 0; i < pattern.properties.length; i++) {
+        const prop = pattern.properties[i];
+
+        // we've exceeded the index of the spread property to all properties to the
+        // right need to be ignored
+        if (i >= spreadPropIndex) break;
+
+        // ignore other spread properties
+        if (t.isRestElement(prop)) continue;
+
+        const key = prop.key;
+        if (t.isIdentifier(key) && !prop.computed) {
+          keys.push(t.stringLiteral(key.name));
+        } else if (t.isTemplateLiteral(prop.key)) {
+          keys.push(t.cloneNode(prop.key));
+        } else if (t.isLiteral(key)) {
+          keys.push(t.stringLiteral(String(key.value)));
+        } else {
+          keys.push(t.cloneNode(key));
+          allLiteral = false;
+        }
+      }
+
+      let value;
+      if (keys.length === 0) {
+        value = t.callExpression(getExtendsHelper(addHelper), [
+          t.objectExpression([]),
+          t.cloneNode(objRef),
+        ]);
+      } else {
+        let keyExpression = t.arrayExpression(keys);
+
+        if (!allLiteral) {
+          keyExpression = t.callExpression(
+            t.memberExpression(keyExpression, t.identifier("map")),
+            [addHelper("toPropertyKey")],
+          );
+        }
+
+        value = t.callExpression(
+          addHelper(`objectWithoutProperties${loose ? "Loose" : ""}`),
+          [t.cloneNode(objRef), keyExpression],
+        );
+      }
+
+      nodes.push(buildVariableAssignment(spreadProp.argument, value));
     }
 
     function objectProperty(prop, propRef) {
@@ -227,7 +293,7 @@ export default function (babel, options) {
           declaration = declarations[i]
           const patternRef = declaration.init;
           const pattern = declaration.id;
-          const reslover = resolve({ scope, blockHoist, kind: nodeKind }, nodes)
+          const reslover = resolve({ scope, blockHoist, kind: nodeKind, addHelper: name => this.addHelper(name) }, nodes)
           if (t.isPattern(pattern)) {
             reslover.push(pattern, patternRef)
             if (+i !== node.declarations.length - 1) {
@@ -235,7 +301,7 @@ export default function (babel, options) {
               // last transformed node inherit from us
               t.inherits(nodes[nodes.length - 1], declar);
             }
-          }else {
+          } else {
             nodes.push(
               t.inherits(
                 reslover.buildVariableAssignment(
